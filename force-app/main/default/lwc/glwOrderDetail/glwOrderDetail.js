@@ -1,5 +1,6 @@
 import { LightningElement, api, wire } from 'lwc';
 import getOrderDetail from '@salesforce/apex/GLW_OrderController.getOrderDetail';
+import requestOrderWeather from '@salesforce/apex/GLW_OrderController.requestOrderWeather';
 import { deleteRecord } from 'lightning/uiRecordApi';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { refreshApex } from '@salesforce/apex';
@@ -13,6 +14,7 @@ export default class GlwOrderDetail extends LightningElement {
     showItemCreate = false;
     showItemEdit = false;
     selectedItemId;
+    weatherRequested = false;
 
     @wire(getOrderDetail, { orderId: '$orderId' })
     wiredDetail(result) {
@@ -21,6 +23,18 @@ export default class GlwOrderDetail extends LightningElement {
         if (data) {
             this.order = data;
             this.error = undefined;
+            // On first successful load, request weather update once
+            if (!this.weatherRequested && this.orderId) {
+                this.weatherRequested = true;
+                requestOrderWeather({ orderId: this.orderId })
+                    .then(() => {
+                        // refresh after a short delay to reflect updated weather fields
+                        window.setTimeout(() => this.refresh(), 1500);
+                    })
+                    .catch(() => {
+                        // ignore errors; UI still shows existing values
+                    });
+            }
         } else if (error) {
             this.error = error;
             this.order = undefined;
@@ -139,4 +153,6 @@ export default class GlwOrderDetail extends LightningElement {
             await refreshApex(this.wiredResult);
         }
     }
+
+    // Weather is requested automatically on first load; no button needed
 }

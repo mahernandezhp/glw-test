@@ -119,6 +119,13 @@ public with sharing class GLW_OrderController {
         return d;
     }
 
+    @AuraEnabled
+    public static void requestOrderWeather(Id orderId) {
+        if (orderId == null) return;
+        // Enqueue async weather update using existing future method
+        GLW_OrderWeatherFuture.updateOrdersWeather(new List<Id>{ orderId });
+    }
+
     @AuraEnabled(cacheable=true)
     public static PageResult getOrderPage(Integer pageSize, Integer pageNumber, String searchTerm) {
         Integer size = (pageSize == null || pageSize <= 0 || pageSize > 100) ? 15 : pageSize;
