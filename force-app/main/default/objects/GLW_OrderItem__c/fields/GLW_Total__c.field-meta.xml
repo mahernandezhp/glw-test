@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>GLW_Total__c</fullName>
+    <formula>BLANKVALUE(GLW_Quantity__c, 0) * BLANKVALUE(GLW_UnitPrice__c, 0)</formula>
+    <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+    <inlineHelpText>Calculates the total amount based on GLW_Quantity__c and GLW_UnitPrice__c, while handling NULL values gracefully</inlineHelpText>
     <label>Total</label>
     <precision>18</precision>
     <required>false</required>

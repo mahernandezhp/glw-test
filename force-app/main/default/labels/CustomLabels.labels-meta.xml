@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomLabels xmlns="http://soap.sforce.com/2006/04/metadata">
+    <labels>
+        <fullName>GLW_OpenWeatherApiKey</fullName>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>OpenWeather API Key</shortDescription>
+        <value>1d97188919b3fa2e6d4d7676569379de</value>
+    </labels>
+</CustomLabels>
+

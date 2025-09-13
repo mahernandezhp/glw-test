@@ -3,7 +3,7 @@
     <fullName>GLW_Customer__c</fullName>
     <deleteConstraint>SetNull</deleteConstraint>
     <label>Customer</label>
-    <referenceTo>Customer__c</referenceTo>
+    <referenceTo>GLW_Customer__c</referenceTo>
     <relationshipLabel>Orders</relationshipLabel>
     <relationshipName>Orders</relationshipName>
     <required>false</required>
