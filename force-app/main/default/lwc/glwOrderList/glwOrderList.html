@@ -6,6 +6,7 @@
                     <lightning-input type="search" label="Search Orders or Customers" placeholder="Type to search..." onchange={handleSearchChange} value={searchTerm}></lightning-input>
                 </div>
                 <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-text-align_right">
+                    <lightning-button variant="brand" label="New Order" onclick={openNew} class="slds-m-right_small"></lightning-button>
                     <lightning-button variant="neutral" label="Previous" onclick={handlePrev} disabled={isFirstPage} class="slds-m-right_small"></lightning-button>
                     <span>Page {pageNumber} of {totalPages} • 15 per page • {totalRecords} total</span>
                     <lightning-button variant="neutral" label="Next" onclick={handleNext} disabled={isLastPage} class="slds-m-left_small"></lightning-button>
@@ -32,6 +33,54 @@
                         <footer class="slds-modal__footer">
                             <lightning-button variant="neutral" label="Close" onclick={closeDetail}></lightning-button>
                         </footer>
+                    </div>
+                </section>
+                <div class="slds-backdrop slds-backdrop_open"></div>
+            </template>
+
+            <!-- Create Modal -->
+            <template if:true={showCreate}>
+                <section role="dialog" tabindex="-1" aria-modal="true" class="slds-modal slds-fade-in-open">
+                    <div class="slds-modal__container">
+                        <header class="slds-modal__header">
+                            <h2 class="slds-modal__title">New Order</h2>
+                        </header>
+                        <div class="slds-modal__content slds-p-around_medium">
+                            <lightning-record-edit-form object-api-name="GLW_Order__c" onsuccess={handleCreateSuccess}>
+                                <lightning-messages></lightning-messages>
+                                <lightning-input-field field-name="Name"></lightning-input-field>
+                                <lightning-input-field field-name="GLW_Customer__c"></lightning-input-field>
+                                <lightning-input-field field-name="GLW_OrderDate__c"></lightning-input-field>
+                                <div class="slds-m-top_medium slds-text-align_right">
+                                    <lightning-button variant="neutral" label="Cancel" onclick={closeCreate} class="slds-m-right_small"></lightning-button>
+                                    <lightning-button type="submit" variant="brand" label="Save"></lightning-button>
+                                </div>
+                            </lightning-record-edit-form>
+                        </div>
+                    </div>
+                </section>
+                <div class="slds-backdrop slds-backdrop_open"></div>
+            </template>
+
+            <!-- Edit Modal -->
+            <template if:true={showEdit}>
+                <section role="dialog" tabindex="-1" aria-modal="true" class="slds-modal slds-fade-in-open">
+                    <div class="slds-modal__container">
+                        <header class="slds-modal__header">
+                            <h2 class="slds-modal__title">Edit Order</h2>
+                        </header>
+                        <div class="slds-modal__content slds-p-around_medium">
+                            <lightning-record-edit-form record-id={selectedOrderId} object-api-name="GLW_Order__c" onsuccess={handleEditSuccess}>
+                                <lightning-messages></lightning-messages>
+                                <lightning-input-field field-name="Name"></lightning-input-field>
+                                <lightning-input-field field-name="GLW_Customer__c"></lightning-input-field>
+                                <lightning-input-field field-name="GLW_OrderDate__c"></lightning-input-field>
+                                <div class="slds-m-top_medium slds-text-align_right">
+                                    <lightning-button variant="neutral" label="Cancel" onclick={closeEdit} class="slds-m-right_small"></lightning-button>
+                                    <lightning-button type="submit" variant="brand" label="Save"></lightning-button>
+                                </div>
+                            </lightning-record-edit-form>
+                        </div>
                     </div>
                 </section>
                 <div class="slds-backdrop slds-backdrop_open"></div>

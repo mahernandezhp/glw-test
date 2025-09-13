@@ -1,6 +1,8 @@
 import { LightningElement, wire, track } from 'lwc';
 import getOrderPage from '@salesforce/apex/GLW_OrderController.getOrderPage';
 import { refreshApex } from '@salesforce/apex';
+import { ShowToastEvent } from 'lightning/platformShowToastEvent';
+import { deleteRecord } from 'lightning/uiRecordApi';
 
 export default class GlwOrderList extends LightningElement {
     pageSize = 15;
@@ -14,22 +16,7 @@ export default class GlwOrderList extends LightningElement {
     showDetail = false;
     selectedOrderId;
 
-    actions = [
-        { label: 'View Details', name: 'view' }
-    ];
-
-    columns = [
-        { label: 'Order Name', fieldName: 'name', type: 'text' },
-        { label: 'Customer', fieldName: 'customerName', type: 'text' },
-        { label: 'City', fieldName: 'customerCity', type: 'text' },
-        { label: 'Order Date', fieldName: 'orderDate', type: 'date' },
-        { label: 'Total', fieldName: 'total', type: 'currency', typeAttributes: { currencyCode: 'USD' } },
-        { label: 'Overdue', fieldName: 'overdue', type: 'boolean' },
-        { label: 'Weather', fieldName: 'weather', type: 'text' },
-        { label: 'Temp (°C)', fieldName: 'weatherTemp', type: 'number', typeAttributes: { minimumIntegerDigits: 1, maximumFractionDigits: 2 } },
-        { label: 'Last Updated', fieldName: 'weatherUpdated', type: 'date' },
-        { type: 'action', typeAttributes: { rowActions: this.actions } }
-    ];
+    columns = [];
 
     @wire(getOrderPage, { pageSize: '$pageSize', pageNumber: '$pageNumber', searchTerm: '$searchTerm' })
     wiredOrders(result) {
@@ -115,5 +102,91 @@ export default class GlwOrderList extends LightningElement {
     closeDetail() {
         this.showDetail = false;
         this.selectedOrderId = undefined;
+    }
+
+    // Build columns once component is constructed to safely reference instance methods
+    connectedCallback() {
+        this.columns = [
+            { label: 'Order Name', fieldName: 'name', type: 'text' },
+            { label: 'Customer', fieldName: 'customerName', type: 'text' },
+            { label: 'City', fieldName: 'customerCity', type: 'text' },
+            { label: 'Order Date', fieldName: 'orderDate', type: 'date' },
+            { label: 'Total', fieldName: 'total', type: 'currency', typeAttributes: { currencyCode: 'USD' } },
+            { label: 'Overdue', fieldName: 'overdue', type: 'boolean' },
+            { label: 'Weather', fieldName: 'weather', type: 'text' },
+            { label: 'Temp (°C)', fieldName: 'weatherTemp', type: 'number', typeAttributes: { minimumIntegerDigits: 1, maximumFractionDigits: 2 } },
+            { label: 'Last Updated', fieldName: 'weatherUpdated', type: 'date' },
+            { type: 'action', typeAttributes: { rowActions: this.getRowActions } }
+        ];
+    }
+
+    getRowActions(row, doneCallback) {
+        const actions = [
+            { label: 'View Details', name: 'view' },
+            { label: 'Edit', name: 'edit' },
+            { label: 'Delete', name: 'delete' }
+        ];
+        doneCallback(actions);
+    }
+
+    // Create/Edit/Delete
+    showCreate = false;
+    showEdit = false;
+
+    openNew() {
+        this.showCreate = true;
+    }
+
+    closeCreate() {
+        this.showCreate = false;
+    }
+
+    openEdit(orderId) {
+        this.selectedOrderId = orderId;
+        this.showEdit = true;
+    }
+
+    closeEdit() {
+        this.showEdit = false;
+        this.selectedOrderId = undefined;
+    }
+
+    handleRowAction(event) {
+        const actionName = event.detail.action.name;
+        const row = event.detail.row;
+        if (actionName === 'view') {
+            this.selectedOrderId = row.id;
+            this.showDetail = true;
+        } else if (actionName === 'edit') {
+            this.openEdit(row.id);
+        } else if (actionName === 'delete') {
+            this.deleteOrder(row.id);
+        }
+    }
+
+    async deleteOrder(id) {
+        try {
+            // basic confirm
+            // eslint-disable-next-line no-alert
+            const ok = window.confirm('Delete this order?');
+            if (!ok) return;
+            await deleteRecord(id);
+            this.dispatchEvent(new ShowToastEvent({ title: 'Deleted', message: 'Order deleted', variant: 'success' }));
+            await this.refresh();
+        } catch (e) {
+            this.dispatchEvent(new ShowToastEvent({ title: 'Error deleting', message: (e && e.body && e.body.message) ? e.body.message : 'Unknown error', variant: 'error' }));
+        }
+    }
+
+    async handleCreateSuccess() {
+        this.closeCreate();
+        this.dispatchEvent(new ShowToastEvent({ title: 'Created', message: 'Order created', variant: 'success' }));
+        await this.refresh();
+    }
+
+    async handleEditSuccess() {
+        this.closeEdit();
+        this.dispatchEvent(new ShowToastEvent({ title: 'Updated', message: 'Order updated', variant: 'success' }));
+        await this.refresh();
     }
 }
