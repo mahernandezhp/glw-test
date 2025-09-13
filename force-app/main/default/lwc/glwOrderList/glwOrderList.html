@@ -1,0 +1,24 @@
+<template>
+    <lightning-card title="Orders" icon-name="standard:orders">
+        <div class="slds-var-p-horizontal_medium slds-var-p-vertical_small">
+            <div class="slds-grid slds-wrap slds-var-p-bottom_small slds-grid_align-spread slds-align_absolute-center">
+                <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                    <lightning-input type="search" label="Search Orders or Customers" placeholder="Type to search..." onchange={handleSearchChange} value={searchTerm}></lightning-input>
+                </div>
+                <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-text-align_right">
+                    <lightning-button variant="neutral" label="Previous" onclick={handlePrev} disabled={isFirstPage} class="slds-m-right_small"></lightning-button>
+                    <span>Page {pageNumber} of {totalPages} • 15 per page • {totalRecords} total</span>
+                    <lightning-button variant="neutral" label="Next" onclick={handleNext} disabled={isLastPage} class="slds-m-left_small"></lightning-button>
+                    <lightning-button label="Refresh" onclick={refresh} icon-name="utility:refresh" class="slds-m-left_medium"></lightning-button>
+                </div>
+            </div>
+            <lightning-datatable key-field="id"
+                                 data={rows}
+                                 columns={columns}
+                                 hide-checkbox-column
+                                 sorted-by="createdDate"
+                                 sorted-direction="desc">
+            </lightning-datatable>
+        </div>
+    </lightning-card>
+</template>
