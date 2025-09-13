@@ -26,19 +26,30 @@ export default class GlwOrderList extends LightningElement {
             this.totalRecords = data.total || 0;
             this.totalPages = Math.max(1, Math.ceil(this.totalRecords / this.pageSize));
             const list = data.records || [];
-            this.rows = list.map(o => ({
-                id: o.Id,
-                name: o.Name,
-                customerName: this.computeCustomerName(o.GLW_Customer__r),
-                customerCity: o.GLW_Customer__r ? o.GLW_Customer__r.GLW_City__c : null,
-                orderDate: o.GLW_OrderDate__c,
-                total: o.GLW_Total__c,
-                overdue: o.GLW_FlagOverdue__c,
-                weather: o.GLW_WeatherDescription__c,
-                weatherTemp: o.GLW_WeatherTemperature__c,
-                weatherUpdated: o.GLW_WeatherLastUpdated__c,
-                createdDate: o.CreatedDate
-            }));
+            this.rows = list.map(o => {
+                const row = {
+                    id: o.Id,
+                    name: o.Name,
+                    recordUrl: '/' + o.Id,
+                    customerName: this.computeCustomerName(o.GLW_Customer__r),
+                    customerRecordUrl: o.GLW_Customer__c ? '/' + o.GLW_Customer__c : null,
+                    customerCity: o.GLW_Customer__r ? o.GLW_Customer__r.GLW_City__c : null,
+                    orderDate: o.GLW_OrderDate__c,
+                    total: o.GLW_Total__c,
+                    overdue: o.GLW_FlagOverdue__c,
+                    weather: o.GLW_WeatherDescription__c,
+                    weatherTemp: o.GLW_WeatherTemperature__c,
+                    weatherUpdated: o.GLW_WeatherLastUpdated__c,
+                    createdDate: o.CreatedDate,
+                    // Conditional text color for overdue rows (red text)
+                    overdueClass: o.GLW_FlagOverdue__c ? 'slds-text-color_error' : null
+                };
+                if (o.GLW_FlagOverdue__c) {
+                    // Keep full-row red background; set font color red as requested
+                    row.rowAttributes = { style: 'background-color:#ba0517;color:#ba0517;' };
+                }
+                return row;
+            });
         } else if (error) {
             // Simple console error; enhance as needed
             // eslint-disable-next-line no-console
@@ -51,7 +62,11 @@ export default class GlwOrderList extends LightningElement {
         const parts = [];
         if (cust.GLW_FirstName__c) parts.push(cust.GLW_FirstName__c);
         if (cust.GLW_LastName__c) parts.push(cust.GLW_LastName__c);
-        return parts.join(' ');
+        if (parts.length) {
+            return parts.join(' ');
+        }
+        // Fallback to the related record's Name when first/last are not populated
+        return cust.Name || null;
     }
 
     async refresh() {
@@ -107,15 +122,15 @@ export default class GlwOrderList extends LightningElement {
     // Build columns once component is constructed to safely reference instance methods
     connectedCallback() {
         this.columns = [
-            { label: 'Order Name', fieldName: 'name', type: 'text' },
-            { label: 'Customer', fieldName: 'customerName', type: 'text' },
-            { label: 'City', fieldName: 'customerCity', type: 'text' },
-            { label: 'Order Date', fieldName: 'orderDate', type: 'date' },
-            { label: 'Total', fieldName: 'total', type: 'currency', typeAttributes: { currencyCode: 'USD' } },
-            { label: 'Overdue', fieldName: 'overdue', type: 'boolean' },
-            { label: 'Weather', fieldName: 'weather', type: 'text' },
-            { label: 'Temp (°C)', fieldName: 'weatherTemp', type: 'number', typeAttributes: { minimumIntegerDigits: 1, maximumFractionDigits: 2 } },
-            { label: 'Last Updated', fieldName: 'weatherUpdated', type: 'date' },
+            { label: 'Order Name', fieldName: 'recordUrl', type: 'url', typeAttributes: { label: { fieldName: 'name' }, target: '_blank' }, cellAttributes: { class: { fieldName: 'overdueClass' } } },
+            { label: 'Customer', fieldName: 'customerRecordUrl', type: 'url', typeAttributes: { label: { fieldName: 'customerName' }, target: '_blank' }, cellAttributes: { class: { fieldName: 'overdueClass' } } },
+            { label: 'City', fieldName: 'customerCity', type: 'text', cellAttributes: { class: { fieldName: 'overdueClass' } } },
+            { label: 'Order Date', fieldName: 'orderDate', type: 'date', cellAttributes: { class: { fieldName: 'overdueClass' } } },
+            { label: 'Total', fieldName: 'total', type: 'currency', typeAttributes: { currencyCode: 'USD' }, cellAttributes: { class: { fieldName: 'overdueClass' } } },
+            { label: 'Overdue', fieldName: 'overdue', type: 'boolean', cellAttributes: { class: { fieldName: 'overdueClass' } } },
+            { label: 'Weather', fieldName: 'weather', type: 'text', cellAttributes: { class: { fieldName: 'overdueClass' } } },
+            { label: 'Temp (°C)', fieldName: 'weatherTemp', type: 'number', typeAttributes: { minimumIntegerDigits: 1, maximumFractionDigits: 2 }, cellAttributes: { class: { fieldName: 'overdueClass' } } },
+            { label: 'Last Updated', fieldName: 'weatherUpdated', type: 'date', cellAttributes: { class: { fieldName: 'overdueClass' } } },
             { type: 'action', typeAttributes: { rowActions: this.getRowActions } }
         ];
     }
