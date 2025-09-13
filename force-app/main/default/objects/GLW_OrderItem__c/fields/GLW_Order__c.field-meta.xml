@@ -3,9 +3,9 @@
     <fullName>GLW_Order__c</fullName>
     <deleteConstraint>SetNull</deleteConstraint>
     <label>Order</label>
-    <referenceTo>Order</referenceTo>
+    <referenceTo>GLW_Order__c</referenceTo>
     <relationshipLabel>Order Items</relationshipLabel>
-    <relationshipName>Order_Items</relationshipName>
+    <relationshipName>OrderItems</relationshipName>
     <required>false</required>
     <trackTrending>false</trackTrending>
     <type>Lookup</type>
