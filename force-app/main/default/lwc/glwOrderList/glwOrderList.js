@@ -11,6 +11,12 @@ export default class GlwOrderList extends LightningElement {
     @track rows = [];
     searchTerm = '';
     searchDebounce;
+    showDetail = false;
+    selectedOrderId;
+
+    actions = [
+        { label: 'View Details', name: 'view' }
+    ];
 
     columns = [
         { label: 'Order Name', fieldName: 'name', type: 'text' },
@@ -21,7 +27,8 @@ export default class GlwOrderList extends LightningElement {
         { label: 'Overdue', fieldName: 'overdue', type: 'boolean' },
         { label: 'Weather', fieldName: 'weather', type: 'text' },
         { label: 'Temp (°C)', fieldName: 'weatherTemp', type: 'number', typeAttributes: { minimumIntegerDigits: 1, maximumFractionDigits: 2 } },
-        { label: 'Last Updated', fieldName: 'weatherUpdated', type: 'date' }
+        { label: 'Last Updated', fieldName: 'weatherUpdated', type: 'date' },
+        { type: 'action', typeAttributes: { rowActions: this.actions } }
     ];
 
     @wire(getOrderPage, { pageSize: '$pageSize', pageNumber: '$pageNumber', searchTerm: '$searchTerm' })
@@ -93,5 +100,20 @@ export default class GlwOrderList extends LightningElement {
             this.searchTerm = val;
             this.pageNumber = 1; // reset to first page on new search
         }, 300);
+    }
+
+    // Row action handler to show detail
+    handleRowAction(event) {
+        const actionName = event.detail.action.name;
+        const row = event.detail.row;
+        if (actionName === 'view') {
+            this.selectedOrderId = row.id;
+            this.showDetail = true;
+        }
+    }
+
+    closeDetail() {
+        this.showDetail = false;
+        this.selectedOrderId = undefined;
     }
 }

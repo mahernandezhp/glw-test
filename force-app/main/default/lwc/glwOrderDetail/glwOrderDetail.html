@@ -1,0 +1,43 @@
+<template>
+    <template if:true={order}>
+        <section class="slds-p-around_medium">
+            <lightning-layout multiple-rows>
+                <lightning-layout-item size="12">
+                    <h2 class="slds-text-heading_medium slds-m-bottom_small">{order.orderName}</h2>
+                </lightning-layout-item>
+                <lightning-layout-item size="12" medium-device-size="6" class="slds-m-bottom_medium">
+                    <lightning-card title="Order Info" icon-name="standard:orders">
+                        <div class="slds-p-horizontal_medium slds-p-vertical_small">
+                            <p><strong>Order Date:</strong> {order.orderDate}</p>
+                            <p><strong>Total:</strong> {order.total}</p>
+                            <p><strong>Overdue:</strong> {order.overdue}</p>
+                            <p><strong>Weather:</strong> {order.weather} ({order.weatherTemp} °C) @ {order.weatherCity}</p>
+                        </div>
+                    </lightning-card>
+                </lightning-layout-item>
+                <lightning-layout-item size="12" medium-device-size="6" class="slds-m-bottom_medium">
+                    <lightning-card title="Customer" icon-name="standard:customer">
+                        <div class="slds-p-horizontal_medium slds-p-vertical_small">
+                            <p><strong>Name:</strong> {customerName}</p>
+                            <p><strong>Address:</strong> {order.street}, {order.city}, {order.state} {order.postalCode}, {order.country}</p>
+                        </div>
+                    </lightning-card>
+                </lightning-layout-item>
+                <lightning-layout-item size="12">
+                    <lightning-card title="Items" icon-name="standard:product">
+                        <div class="slds-p-horizontal_medium slds-p-vertical_small">
+                            <lightning-datatable key-field="id" data={itemRows} columns={itemColumns} hide-checkbox-column>
+                            </lightning-datatable>
+                        </div>
+                    </lightning-card>
+                </lightning-layout-item>
+            </lightning-layout>
+        </section>
+    </template>
+    <template if:true={error}>
+        <div class="slds-notify slds-notify_alert slds-theme_error" role="alert">
+            <span class="slds-assistive-text">Error</span>
+            <h2>{errorMessage}</h2>
+        </div>
+    </template>
+</template>
