@@ -1,5 +1,6 @@
 import { LightningElement, api, wire } from 'lwc';
 import getOrderDetail from '@salesforce/apex/GLW_OrderController.getOrderDetail';
+import getOrderItemsPage from '@salesforce/apex/GLW_OrderController.getOrderItemsPage';
 import requestOrderWeather from '@salesforce/apex/GLW_OrderController.requestOrderWeather';
 import { deleteRecord } from 'lightning/uiRecordApi';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
@@ -15,6 +16,13 @@ export default class GlwOrderDetail extends LightningElement {
     showItemEdit = false;
     selectedItemId;
     weatherRequested = false;
+    // pagination state for items
+    itemPageSize = 10;
+    itemPageNumber = 1;
+    itemTotal = 0;
+    itemTotalPages = 1;
+    itemRows = [];
+    wiredItemsResult;
 
     @wire(getOrderDetail, { orderId: '$orderId' })
     wiredDetail(result) {
@@ -152,6 +160,39 @@ export default class GlwOrderDetail extends LightningElement {
         if (this.wiredResult) {
             await refreshApex(this.wiredResult);
         }
+        if (this.wiredItemsResult) {
+            await refreshApex(this.wiredItemsResult);
+        }
+    }
+
+    @wire(getOrderItemsPage, { orderId: '$orderId', pageSize: '$itemPageSize', pageNumber: '$itemPageNumber' })
+    wiredItems(result) {
+        this.wiredItemsResult = result;
+        const { data, error } = result;
+        if (data) {
+            this.itemRows = data.records || [];
+            this.itemTotal = data.total || 0;
+            this.itemTotalPages = Math.max(1, Math.ceil(this.itemTotal / this.itemPageSize));
+        } else if (error) {
+            // eslint-disable-next-line no-console
+            console.error('Error loading order items', error);
+        }
+    }
+
+    handleItemPrev() {
+        if (this.itemPageNumber > 1) this.itemPageNumber -= 1;
+    }
+
+    handleItemNext() {
+        if (this.itemPageNumber < this.itemTotalPages) this.itemPageNumber += 1;
+    }
+
+    get isFirstItemPage() {
+        return this.itemPageNumber <= 1;
+    }
+
+    get isLastItemPage() {
+        return this.itemPageNumber >= this.itemTotalPages;
     }
 
     // Weather is requested automatically on first load; no button needed

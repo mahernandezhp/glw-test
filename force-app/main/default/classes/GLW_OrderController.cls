@@ -56,6 +56,13 @@ public with sharing class GLW_OrderController {
         @AuraEnabled public List<OrderItemRow> items;
     }
 
+    public class OrderItemsPage {
+        @AuraEnabled public List<OrderItemRow> records;
+        @AuraEnabled public Integer total;
+        @AuraEnabled public Integer pageNumber;
+        @AuraEnabled public Integer pageSize;
+    }
+
     @AuraEnabled(cacheable=true)
     public static OrderDetail getOrderDetail(Id orderId) {
         if (orderId == null) return null;
@@ -124,6 +131,45 @@ public with sharing class GLW_OrderController {
         if (orderId == null) return;
         // Enqueue async weather update using existing future method
         GLW_OrderWeatherFuture.updateOrdersWeather(new List<Id>{ orderId });
+    }
+
+    @AuraEnabled(cacheable=true)
+    public static OrderItemsPage getOrderItemsPage(Id orderId, Integer pageSize, Integer pageNumber) {
+        if (orderId == null) return null;
+        Integer size = (pageSize == null || pageSize <= 0 || pageSize > 100) ? 10 : pageSize;
+        Integer page = (pageNumber == null || pageNumber < 1) ? 1 : pageNumber;
+        Integer offsetVal = (page - 1) * size;
+
+        Integer totalRows = [SELECT COUNT() FROM GLW_OrderItem__c WHERE GLW_Order__c = :orderId];
+
+        if (offsetVal > 2000) {
+            offsetVal = 2000;
+            page = (Integer) Math.floor(offsetVal / size) + 1;
+        }
+
+        List<GLW_OrderItem__c> items = [
+            SELECT Id, GLW_Product__r.Name, GLW_Quantity__c, GLW_UnitPrice__c, GLW_Total__c
+            FROM GLW_OrderItem__c
+            WHERE GLW_Order__c = :orderId
+            ORDER BY CreatedDate ASC
+            LIMIT :size OFFSET :offsetVal
+        ];
+
+        OrderItemsPage pr = new OrderItemsPage();
+        pr.records = new List<OrderItemRow>();
+        for (GLW_OrderItem__c it : items) {
+            OrderItemRow r = new OrderItemRow();
+            r.id = it.Id;
+            r.productName = (it.GLW_Product__r == null) ? null : it.GLW_Product__r.Name;
+            r.quantity = it.GLW_Quantity__c;
+            r.unitPrice = it.GLW_UnitPrice__c;
+            r.total = it.GLW_Total__c;
+            pr.records.add(r);
+        }
+        pr.total = totalRows;
+        pr.pageNumber = page;
+        pr.pageSize = size;
+        return pr;
     }
 
     @AuraEnabled(cacheable=true)

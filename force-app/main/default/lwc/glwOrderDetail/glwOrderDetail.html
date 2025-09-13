@@ -26,8 +26,15 @@
                 <lightning-layout-item size="12">
                     <lightning-card title="Items" icon-name="standard:product">
                         <div class="slds-p-horizontal_medium slds-p-vertical_small">
-                            <div class="slds-m-bottom_small slds-text-align_right">
-                                <lightning-button variant="brand" label="New Item" onclick={openItemCreate}></lightning-button>
+                            <div class="slds-grid slds-wrap slds-m-bottom_small slds-grid_align-spread slds-align_absolute-center">
+                                <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                                    <lightning-button variant="brand" label="New Item" onclick={openItemCreate}></lightning-button>
+                                </div>
+                                <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-text-align_right">
+                                    <lightning-button variant="neutral" label="Previous" onclick={handleItemPrev} disabled={isFirstItemPage} class="slds-m-right_small"></lightning-button>
+                                    <span>Page {itemPageNumber} of {itemTotalPages} • 10 per page • {itemTotal} total</span>
+                                    <lightning-button variant="neutral" label="Next" onclick={handleItemNext} disabled={isLastItemPage} class="slds-m-left_small"></lightning-button>
+                                </div>
                             </div>
                             <lightning-datatable key-field="id" data={itemRows} columns={itemColumns} hide-checkbox-column onrowaction={handleItemRowAction}>
                             </lightning-datatable>
