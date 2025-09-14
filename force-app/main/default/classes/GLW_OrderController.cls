@@ -1,7 +1,15 @@
 public with sharing class GLW_OrderController {
     @AuraEnabled(cacheable=true)
     public static List<GLW_Order__c> getOrders(Integer limitSize) {
-        Integer lim = (limitSize == null || limitSize <= 0 || limitSize > 200) ? 50 : limitSize;
+        Integer lim = validateLimit(limitSize, 50, 200);
+        return fetchOrders(lim);
+    }
+
+    private static Integer validateLimit(Integer limitSize, Integer defaultLimit, Integer maxLimit) {
+        return (limitSize == null || limitSize <= 0 || limitSize > maxLimit) ? defaultLimit : limitSize;
+    }
+
+    private static List<GLW_Order__c> fetchOrders(Integer limitSize) {
         return [
             SELECT Id, Name, CreatedDate,
                    GLW_OrderDate__c, GLW_Total__c, GLW_FlagOverdue__c,
@@ -14,7 +22,7 @@ public with sharing class GLW_OrderController {
                    GLW_Customer__r.GLW_Country__c
             FROM GLW_Order__c
             ORDER BY CreatedDate DESC
-            LIMIT :lim
+            LIMIT :limitSize
         ];
     }
 
@@ -174,20 +182,36 @@ public with sharing class GLW_OrderController {
 
     @AuraEnabled(cacheable=true)
     public static PageResult getOrderPage(Integer pageSize, Integer pageNumber, String searchTerm) {
-        Integer size = (pageSize == null || pageSize <= 0 || pageSize > 100) ? 15 : pageSize;
+        Integer size = validateLimit(pageSize, 15, 100);
         Integer page = (pageNumber == null || pageNumber < 1) ? 1 : pageNumber;
-        Integer offsetVal = (page - 1) * size;
+        Integer offsetVal = calculateOffset(page, size);
 
-        // Build optional filter
-        // Simple contains filter; bind variable prevents injection
-        String term = String.isBlank(searchTerm) ? null : '%' + searchTerm + '%';
+        String term = buildSearchTerm(searchTerm);
+        Integer totalRows = countOrders(term);
 
-        // Total count
-        Integer totalRows;
+        if (offsetVal > 2000) {
+            offsetVal = 2000;
+            page = (Integer) Math.floor(offsetVal / size) + 1;
+        }
+
+        List<GLW_Order__c> rows = fetchOrderPage(term, size, offsetVal);
+
+        return buildPageResult(rows, totalRows, page, size);
+    }
+
+    private static Integer calculateOffset(Integer page, Integer size) {
+        return (page - 1) * size;
+    }
+
+    private static String buildSearchTerm(String searchTerm) {
+        return String.isBlank(searchTerm) ? null : '%' + searchTerm + '%';
+    }
+
+    private static Integer countOrders(String term) {
         if (term == null) {
-            totalRows = [SELECT COUNT() FROM GLW_Order__c];
+            return [SELECT COUNT() FROM GLW_Order__c];
         } else {
-            totalRows = [
+            return [
                 SELECT COUNT() FROM GLW_Order__c
                 WHERE Name LIKE :term
                 OR GLW_Customer__r.Name LIKE :term
@@ -195,16 +219,11 @@ public with sharing class GLW_OrderController {
                 OR GLW_Customer__r.GLW_LastName__c LIKE :term
             ];
         }
+    }
 
-        // Clamp offset within OFFSET limit (2000 rows)
-        if (offsetVal > 2000) {
-            offsetVal = 2000;
-            page = (Integer) Math.floor(offsetVal / size) + 1;
-        }
-
-        List<GLW_Order__c> rows;
+    private static List<GLW_Order__c> fetchOrderPage(String term, Integer size, Integer offsetVal) {
         if (term == null) {
-            rows = [
+            return [
                 SELECT Id, Name, CreatedDate,
                        GLW_OrderDate__c, GLW_Total__c, GLW_FlagOverdue__c,
                        GLW_WeatherDescription__c, GLW_WeatherTemperature__c, GLW_WeatherCity__c, GLW_WeatherLastUpdated__c,
@@ -220,7 +239,7 @@ public with sharing class GLW_OrderController {
                 LIMIT :size OFFSET :offsetVal
             ];
         } else {
-            rows = [
+            return [
                 SELECT Id, Name, CreatedDate,
                        GLW_OrderDate__c, GLW_Total__c, GLW_FlagOverdue__c,
                        GLW_WeatherDescription__c, GLW_WeatherTemperature__c, GLW_WeatherCity__c, GLW_WeatherLastUpdated__c,
@@ -240,7 +259,9 @@ public with sharing class GLW_OrderController {
                 LIMIT :size OFFSET :offsetVal
             ];
         }
+    }
 
+    private static PageResult buildPageResult(List<GLW_Order__c> rows, Integer totalRows, Integer page, Integer size) {
         PageResult pr = new PageResult();
         pr.records = rows;
         pr.total = totalRows;
