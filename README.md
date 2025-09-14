@@ -1,18 +1,85 @@
-# Salesforce DX Project: Next Steps
+# GLW Deployment and Batch Job Guide
 
-Now that you’ve created a Salesforce DX project, what’s next? Here are some documentation resources to get you started.
+This guide explains how to deploy the GLW metadata to a Salesforce org and how to run/schedule the overdue orders batch process.
 
-## How Do You Plan to Deploy Your Changes?
+## Prerequisites
 
-Do you want to deploy a set of changes, or create a self-contained application? Choose a [development model](https://developer.salesforce.com/tools/vscode/en/user-guide/development-models).
+- Salesforce CLI installed (`sf` or legacy `sfdx`).
+- Authorized default org (e.g., `sf org login web -d -a myOrg`).
 
-## Configure Your Salesforce DX Project
+## Deploy the Source
 
-The `sfdx-project.json` file contains useful configuration information for your project. See [Salesforce DX Project Configuration](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_ws_config.htm) in the _Salesforce DX Developer Guide_ for details about this file.
+Using the new `sf` CLI:
 
-## Read All About It
+```
+sf project deploy start -d force-app -w 10
+```
 
-- [Salesforce Extensions Documentation](https://developer.salesforce.com/tools/vscode/)
-- [Salesforce CLI Setup Guide](https://developer.salesforce.com/docs/atlas.en-us.sfdx_setup.meta/sfdx_setup/sfdx_setup_intro.htm)
-- [Salesforce DX Developer Guide](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_intro.htm)
-- [Salesforce CLI Command Reference](https://developer.salesforce.com/docs/atlas.en-us.sfdx_cli_reference.meta/sfdx_cli_reference/cli_reference.htm)
+Using legacy `sfdx` CLI:
+
+```
+sfdx force:source:deploy -p force-app -w 10
+```
+
+## Run the Overdue Orders Batch (One-Time)
+
+From the CLI (runs in the default org):
+
+```
+sf apex run --code "Database.executeBatch(new GLW_OverdueOrderBatch(), 200);" -w 10
+```
+
+Legacy `sfdx` equivalent:
+
+```
+sfdx force:apex:execute -f - <<'EOF'
+Database.executeBatch(new GLW_OverdueOrderBatch(), 200);
+EOF
+```
+
+Notes:
+
+- The scope size is optional; default is 200. You can adjust it based on volume.
+
+## Schedule the Batch to Run Daily
+
+Option 1 — via Setup UI:
+
+- Setup → Apex Classes → Schedule Apex → New
+- Job Name: `GLW Daily Overdue Orders`
+- Apex Class: `GLW_OverdueOrderScheduler`
+- Frequency: Daily, choose a time
+
+Option 2 — programmatically (Execute Anonymous):
+
+```
+System.schedule(
+    'GLW Daily Overdue Orders',
+    GLW_OverdueOrderScheduler.dailyCron(2, 0),
+    new GLW_OverdueOrderScheduler()
+);
+```
+
+This example runs daily at 02:00 org time. Adjust hour/minute as needed.
+
+## Monitor and Manage Jobs
+
+- Monitor: Setup → Apex Jobs
+- Unschedule: Setup → Scheduled Jobs (Delete) or via Apex:
+
+```
+// Replace with the Id of the scheduled job
+System.abortJob('707xxxxxxxxxxxx');
+```
+
+## Related Files (for reference)
+
+- Batch: `force-app/main/default/classes/GLW_OverdueOrderBatch.cls`
+- Scheduler: `force-app/main/default/classes/GLW_OverdueOrderScheduler.cls`
+- Overdue flag field: `force-app/main/default/objects/GLW_Order__c/fields/GLW_FlagOverdue__c.field-meta.xml`
+
+## Troubleshooting
+
+- Ensure your default org is set (`sf org list --all`) and authenticated.
+- If deploy fails, try deploying only changed paths first and review the CLI error for missing dependencies.
+- Check Apex Jobs for failures and open the job’s debug log for details.
